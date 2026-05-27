@@ -13,7 +13,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       type: '屏幕尺子',
       value: '5.2 cm',
       time: '2026-05-27 14:30',
-      icon: Icons.ruler,
+      icon: Icons.straighten,
     ),
     _Measurement(
       type: 'AR 测量',
@@ -25,7 +25,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       type: '水平仪',
       value: '0.5°',
       time: '2026-05-27 14:20',
-      icon: Icons.level,
+      icon: Icons.explore,
     ),
   ];
 

@@ -50,7 +50,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisSpacing: 16,
                   children: [
                     _FeatureCard(
-                      icon: Icons.ruler,
+                      icon: Icons.straighten,
                       title: '屏幕尺子',
                       subtitle: '小物件精确测量',
                       color: Colors.blue,
@@ -64,7 +64,7 @@ class HomeScreen extends StatelessWidget {
                       onTap: () => _navigate(context, const ArScreen()),
                     ),
                     _FeatureCard(
-                      icon: Icons.level,
+                      icon: Icons.explore,
                       title: '水平仪',
                       subtitle: '角度和倾斜',
                       color: Colors.orange,
