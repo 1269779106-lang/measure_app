@@ -10,3 +10,6 @@ build/
 *.aab
 *.ipa
 *.dmg
+*.jks
+*.keystore
+android/key.properties
