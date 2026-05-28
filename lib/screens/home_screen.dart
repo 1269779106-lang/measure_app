@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'ruler_screen.dart';
 import 'ar_screen.dart';
 import 'level_screen.dart';
+import 'calibrate_screen.dart';
+import 'photo_screen.dart';
 import 'history_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -48,6 +50,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisCount: 2,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
+                  childAspectRatio: 1.2,
                   children: [
                     _FeatureCard(
                       icon: Icons.straighten,
@@ -69,6 +72,20 @@ class HomeScreen extends StatelessWidget {
                       subtitle: '角度和倾斜',
                       color: Colors.orange,
                       onTap: () => _navigate(context, const LevelScreen()),
+                    ),
+                    _FeatureCard(
+                      icon: Icons.grid_on,
+                      title: '标定测量',
+                      subtitle: '参考物校准',
+                      color: Colors.teal,
+                      onTap: () => _navigate(context, const CalibrateScreen()),
+                    ),
+                    _FeatureCard(
+                      icon: Icons.camera_alt,
+                      title: '拍照测量',
+                      subtitle: '拍照记录结果',
+                      color: Colors.indigo,
+                      onTap: () => _navigate(context, const PhotoScreen()),
                     ),
                     _FeatureCard(
                       icon: Icons.history,

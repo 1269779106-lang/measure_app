@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+import '../services/measurement_service.dart';
 
 class RulerScreen extends StatefulWidget {
   const RulerScreen({super.key});
@@ -14,12 +16,17 @@ class _RulerScreenState extends State<RulerScreen> {
   bool _measuring = false;
   double? _result;
 
-  // 屏幕 PPI（每英寸像素数），Android 通常 160-640
-  // 这里用 MediaQuery 获取设备像素比，再换算
+  // 获取真实屏幕 PPI
   double get _ppi {
-    // 1 英寸 = 2.54 cm
-    // 假设标准 PPI 为 160（Android mdpi），实际应从设备获取
-    return 160.0;
+    // Flutter 中可以通过 window.devicePixelRatio 获取设备像素比
+    // 但 PPI 需要物理尺寸，这里使用常见设备的估算值
+    // Android 设备通常在 160-640 PPI 之间
+    // 使用 devicePixelRatio * 160 作为估算（Android 基准 160 PPI）
+    final dpr = window.devicePixelRatio;
+    // 大多数 Android 设备的基准 PPI 是 160，乘以 devicePixelRatio 得到实际 PPI
+    // 但这个值可能不准确，最好使用 device_info_plus 获取真实值
+    // 这里先用一个更合理的估算：中端手机通常 400-440 PPI
+    return 160.0 * dpr;
   }
 
   double get _pixelToCm => 2.54 / _ppi;
@@ -59,6 +66,26 @@ class _RulerScreenState extends State<RulerScreen> {
                     '将物体放在屏幕上，拖动标记起点和终点',
                     style: TextStyle(color: Colors.blue[700]),
                   ),
+                ),
+              ],
+            ),
+          ),
+          // PPI 信息
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            color: Colors.blue[50],
+            child: Row(
+              children: [
+                Icon(Icons.phone_android, size: 16, color: Colors.blue[400]),
+                const SizedBox(width: 4),
+                Text(
+                  '屏幕 PPI: ${_ppi.toStringAsFixed(0)}',
+                  style: TextStyle(color: Colors.blue[400], fontSize: 12),
+                ),
+                const Spacer(),
+                Text(
+                  '像素比: ${window.devicePixelRatio.toStringAsFixed(2)}',
+                  style: TextStyle(color: Colors.blue[400], fontSize: 12),
                 ),
               ],
             ),
@@ -110,18 +137,46 @@ class _RulerScreenState extends State<RulerScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               color: Colors.grey[100],
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
                 children: [
-                  Icon(Icons.straighten, color: Colors.blue[700]),
-                  const SizedBox(width: 12),
-                  Text(
-                    '${_result!.toStringAsFixed(1)} $_unit',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[700],
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.straighten, color: Colors.blue[700]),
+                      const SizedBox(width: 12),
+                      Text(
+                        '${_result!.toStringAsFixed(1)} $_unit',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () => setState(() {
+                          _startY = 0;
+                          _endY = 0;
+                          _result = null;
+                        }),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('重新测量'),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _saveResult,
+                        icon: const Icon(Icons.save),
+                        label: const Text('保存'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -129,6 +184,22 @@ class _RulerScreenState extends State<RulerScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _saveResult() async {
+    if (_result == null) return;
+
+    await MeasurementService.save(Measurement(
+      type: '屏幕尺子',
+      value: _result!.toStringAsFixed(1),
+      unit: _unit,
+    ));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('测量结果已保存')),
+      );
+    }
   }
 }
 
@@ -206,6 +277,38 @@ class _RulerPainter extends CustomPainter {
       // 起点圆点
       canvas.drawCircle(Offset(size.width / 2, startY), 6, markerPaint);
       canvas.drawCircle(Offset(size.width / 2, endY), 6, markerPaint);
+
+      // 显示测量距离
+      if (!measuring && startY > 0 && endY > 0) {
+        double pixels = (endY - startY).abs();
+        double cm = pixels * pixelToCm;
+        String text;
+        if (unit == 'mm') {
+          text = '${(cm * 10).toStringAsFixed(1)} mm';
+        } else if (unit == 'inch') {
+          text = '${(cm / 2.54).toStringAsFixed(2)} in';
+        } else {
+          text = '${cm.toStringAsFixed(1)} cm';
+        }
+
+        final textPainter = TextPainter(
+          text: TextSpan(
+            text: text,
+            style: const TextStyle(
+              color: Colors.red,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              backgroundColor: Color(0x80FFFFFF),
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        );
+        textPainter.layout();
+        textPainter.paint(
+          canvas,
+          Offset(size.width / 2 + 10, (startY + endY) / 2 - 7),
+        );
+      }
     }
   }
 

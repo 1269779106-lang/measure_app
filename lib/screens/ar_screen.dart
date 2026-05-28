@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/measurement_service.dart';
 
 class ArScreen extends StatefulWidget {
   const ArScreen({super.key});
@@ -142,10 +143,31 @@ class _ArScreenState extends State<ArScreen> {
     return guess;
   }
 
-  void _saveResult() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('测量结果已保存')),
-    );
+  Future<void> _saveResult() async {
+    if (_distance == null) return;
+
+    // 保存为米或厘米，取决于大小
+    String value;
+    String unit;
+    if (_distance! >= 100) {
+      value = (_distance! / 100).toStringAsFixed(2);
+      unit = 'm';
+    } else {
+      value = _distance!.toStringAsFixed(1);
+      unit = 'cm';
+    }
+
+    await MeasurementService.save(Measurement(
+      type: 'AR 测量',
+      value: value,
+      unit: unit,
+    ));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('测量结果已保存')),
+      );
+    }
   }
 }
 
@@ -187,9 +209,14 @@ class _ArPainter extends CustomPainter {
         (points[0].dx + points[1].dx) / 2,
         (points[0].dy + points[1].dy) / 2,
       );
+
+      String text = cm >= 100
+          ? '${(cm / 100).toStringAsFixed(2)} m'
+          : '${cm.toStringAsFixed(1)} cm';
+
       final textPainter = TextPainter(
         text: TextSpan(
-          text: '${cm.toStringAsFixed(1)} cm',
+          text: text,
           style: const TextStyle(
             color: Colors.red,
             fontSize: 16,
